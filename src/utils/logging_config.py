@@ -5,7 +5,7 @@ from datetime import datetime
 from ..config import settings
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
-    def add_fields(self, log_record. record, message_dict):
+    def add_fields(self, log_record, record, message_dict):
         super.add_fields(log_record, record, message_dict)
 
         log_record['timestamp'] = datetime.utcnow().isoformat()
@@ -29,7 +29,7 @@ def setup_logging():
 
     console_handler = logging.StreamHandler(sys.stdout)
 
-    if settings.LOG_FORMAT == 'json'
+    if settings.LOG_FORMAT == 'json':
     formatter = CustomJsonFormatter(
         '%(timestamp)s %(level)s %(service)s %(name)s %(message)s'
     )
@@ -53,7 +53,7 @@ def setup_logging():
 class LogContext:
 
     def __init__(self, **kwargs):
-        self.context = kwargs
+        self.context = kwargs #holds extra fields you want to add
         self.old_factory = None
 
     def __enter__(self):
@@ -70,7 +70,7 @@ class LogContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         logging.setLogRecordFactory(self.old_factory)
-        
+
 
 
 
