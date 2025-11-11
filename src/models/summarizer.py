@@ -77,7 +77,7 @@ class Summarizer:
         if self.model_type == "t5":
             texts = [f"summarize: {text}" for text in texts]
 
-        input = self.tokenizer(
+        inputs = self.tokenizer(
             texts,
             max_length = settings.MAX_INPUT_LENGTH,
             truncation = True,
@@ -94,15 +94,59 @@ class Summarizer:
                 max_length = max_length,
                 min_length = min_length,
                 num_beams=4,
-                length_penalty=2.0,
-                earlt_stopping=True
+                length_penalty=2.0, #siacourages overly long summaries
+                earlyzx_stopping=True
             )
         
         summaries = self.tokenizer.batch_decode(
-            summary_ids,
-            skip_special_tokens = True
+            summary_ids, #converts token ids into hman readable strings
+            skip_special_tokens = True #skips <pad>, <eos>
         )
 
         return summaries
+    
+    def calculate_rouge_scores(
+            sefl,
+            predictions: List[str],
+            references: List[str],
+    ) -> dict:  
+        """
+           Calculate ROUGE scores for evaluation.
+    
+        Args:
+          predictions: Generated summaries
+          references: Reference summaries
+        
+        Returns:
+          Dictionary with ROUGE scores
+        """
+
+        from rouge_score import rouge_scorer
+
+        scorer = rouge_scorer.RougeScorer(
+            ['rouge1', 'rouge2', 'rougeL']
+            use_stemmer = True
+        )
+
+        scores = {
+            'rouge1': [],
+            'rouge2': [],
+            'rougeL': [],
+        }
+
+        for pred, ref in zip(predictions, references):
+            result = scorer.score(ref, pred)
+            for key in scores:
+                scores[key].append(result[key].fmeasure)
+
+        return {
+            key: sum(values) / len(values)
+            for key, values in scores.items()
+        }
+
+
+        
+        
+
     
 
