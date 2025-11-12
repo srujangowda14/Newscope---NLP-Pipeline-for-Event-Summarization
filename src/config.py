@@ -1,4 +1,4 @@
-from pydantic settings import BaseSettings
+from pydantic_settings import BaseSettings
 from typing import Literal
 
 class Settings(BaseSettings):
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     MIN_SUMMARY_LENGTH: int = 50
 
     #Depduplication parameters
-    SIMILARITY_THRESHOLD float = 0.85
+    SIMILARITY_THRESHOLD: float = 0.85
     EMBEDDING_BATCH_SIZE: int = 32
 
     #API Settings
