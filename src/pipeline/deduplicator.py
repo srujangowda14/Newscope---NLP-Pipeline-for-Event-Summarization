@@ -101,15 +101,15 @@ class SemanticDeduplicator:
             return [], set()
         
         if compute_embeddings:
-            articles = self, compute_embeddings(articles)
+            articles = self.compute_embeddings(articles)
 
         unique_articles = []
         duplicate_ids = set()
 
         #Stack embeddings for vectorized operations
-        embeddings = np.vstack([a.embedding for a in articles])
+        embeddings = np.vstack([a.embedding for a in articles]) #stacks the embeddings on top of one another
 
-        for i, article in enumerate(articles):
+        for i, article in enumerate(articles): #enumerate pairs up index and elements
             if article.id in duplicate_ids:
                 continue
 
@@ -133,6 +133,94 @@ class SemanticDeduplicator:
         )
 
         return unique_articles, duplicate_ids
+    
+    def find_similar_clusters(
+            self,
+            articles: List[Article],
+            min_cluster_size: int = 2,
+    ) -> List[List[Article]]:
+        """
+        Group similar articles into clusters.
+        
+        Args:
+            articles: List of articles
+            min_cluster_size: Minimum articles per cluster
+            
+        Returns:
+            List of article clusters
+        """
+        if not articles:
+            return []
+        
+        articles = self.compute_embeddings(articles)
+        embeddings = np.vstack([a.embedding for a in articles])
+
+        #Compute similarity matrix
+
+        similarity_matrix = np.dot(embeddings, embeddings.T) #dot pro b/w matrix and its transpose
+        #M[0][0] similarity woth itself M[0][1] similarity with 0 and 1 embedding
+
+        #find clusters using greedy approach
+        clusters = []
+        visited = set()
+
+        for i, article in enumerate(articles):
+            if i in visited:
+                continue
+
+            #find all similar articles
+            similar_indices = np.where(similarity_matrix[i] >= self.threshold)
+            #compares every element in row i with threshold
+
+            if len(similar_indices) >= min_cluster_size:
+                cluster = [articles[idx] for idx in similar_indices]
+                clusters.append(cluster)
+                visited.update(similar_indices)
+
+            logger.info(f"Found {len(clusters)} article clusters")
+
+            return clusters
+    
+    def compute_similarity(
+            self,
+            article1: Article,
+            article2: Article,
+    ) -> float:
+        """
+        Compute cosine similarity between two articles.
+        
+        Args:
+            article1: First article
+            article2: Second article
+            
+        Returns:
+            Similarity score (0-1)
+        """
+        if article1.embedding is None:
+            self.compute_embeddings([article1])
+
+        if article2.embedding is None:
+            self.compute_embeddings([article2])
+
+        similarity = np.dot(article1.embedding, article2.embedding)
+
+        return float(similarity)
+        
+    
+        
+
+
+
+
+
+
+
+
+
+        
+
+
+        
 
 
          
