@@ -12,8 +12,8 @@ class MetricsCollector:
     total_unique: int = 0
 
     processing_times: List[float] = field(default_factory=list)
-    input_lengths = List[float] = field(default_factory=list)
-    summary_lengths = List[float] = field(default_factory=list)
+    input_lengths: List[float] = field(default_factory=list)
+    summary_lengths: List[float] = field(default_factory=list)
 
     start_time: datetime = field(default_factory=datetime.now)
 

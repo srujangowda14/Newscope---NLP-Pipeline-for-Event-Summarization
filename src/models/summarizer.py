@@ -1,6 +1,6 @@
 import torch
+from transformers import AutoTokenizer
 from transformers import(
-    AuthTokenizer,
     AutoModelForSeq2SeqLM,
     BartForConditionalGeneration,
     T5ForConditionalGeneration,
@@ -34,7 +34,7 @@ class Summarizer:
         else:
             raise ValueError(f"Unknown model type: {self.model_type}")
         
-        self.tokenizer = AuthTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model.to(self.device)
         self.model.eval()
 
