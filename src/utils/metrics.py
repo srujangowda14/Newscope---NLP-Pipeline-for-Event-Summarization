@@ -45,13 +45,13 @@ class MetricsCollector:
         self.processing_times.append(processing_time_ms)
 
     def get_summary(self) -> dict:
-        uptime = (datetime.now() - self.start_time).total_seconds
+        uptime = (datetime.now() - self.start_time).total_seconds()
 
         return{
             'total_processed': self.total_processed,
             'total_unique': self.total_unique,
             'total_duplicates': self.total_duplicates,
-            'duplication_rate': (
+            'deduplication_rate': (
                 self.total_duplicates/ self.total_processed
                 if self.total_processed > 0 else 0
             ),
@@ -69,11 +69,11 @@ class MetricsCollector:
             ),
             'avg_input_length':(
                 statistics.mean(self.input_lengths)
-                if self.input_lengths > 0 else 0
+                if self.input_lengths else 0
             ),
             'avg_summary_length':(
                 statistics.mean(self.summary_lengths)
-                if self.summary_lengths > 0 else 0
+                if self.summary_lengths  else 0
             ),
             'compression_ratio':(
                 statistics.mean(self.input_lengths) / statistics.mean(self.summary_lengths)
