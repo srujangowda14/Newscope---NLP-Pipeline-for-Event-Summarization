@@ -66,7 +66,7 @@ class ArticleInput(BaseModel):
             }
         }
 
-class BathProcessRequest(BaseModel):
+class BatchProcessRequest(BaseModel):
     """Batch processing request"""
     articles: List[ArticleInput]
     deduplicate: bool = True
@@ -93,19 +93,29 @@ class BatchProcessResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response"""
-    total_processed: int
-    total_duplictaes: int
-    avg_processing_time_ms: float
-    uptime_seconds: float
+    status: str
+    timestamp: str
+    models_loaded: bool
 
 class MetricsResponse(BaseModel):
     """Metrics Response"""
     total_processed: int
-    total_duplication: int
+    total_duplicates: int
     avg_processing_time_ms: float
     uptime_seconds: float
 
 #API Routes
+# API Routes
+@app.get("/", response_model=dict)  # ❌ Added root endpoint
+async def root():
+    """Root endpoint."""
+    return {
+        "service": "NewsScope",
+        "version": "1.0.0",
+        "status": "operational",
+    }
+
+
 @app.get("/health", response_model = HealthResponse)
 async def health_check():
     """Health check endpoint"""
@@ -127,24 +137,28 @@ async def summarize_article(article: ArticleInput):
         Processed article with summary
     """
     try:
-        result = processor.process_single_article(article.dict())
+        article_dict = article.dict()
+        if not article_dict.get('id'):
+            # Generate ID from URL if not provided
+            article_dict['id'] = str(hash(article_dict['url']))
+        result = processor.process_single_article(article_dict)
 
         return ProcessedArticleResponse(
             id = result.id,
             title = result.title,
             summary = result.summary,
-            url = result.url,
-            published_at = result.published_at,
+            url = str(result.url),
+            published_at = result.published_at or '',
             is_duplicate = result.is_duplicate,
             processing_time_ms = result.processing_time_ms
         )
     except Exception as e:
-        logger.error("Error processing article: {e}", exc_info = True)
+        logger.error(f"Error processing article: {e}", exc_info = True)
         raise HTTPException(status_code = 500, detail = str(e))
     
 @app.post("/api/v1/batch", response_model = BatchProcessResponse)
 async def batch_process(
-    request: BathProcessRequest,
+    request: BatchProcessRequest,
     background_tasks: BackgroundTasks,
 ):
     """
@@ -171,7 +185,7 @@ async def batch_process(
             summarize = request.summarize,
         )
 
-        processing_time = (datetime.now() - start_time).total_seconds * 1000
+        processing_time = (datetime.now() - start_time).total_seconds() * 1000
 
         #Separate unique and duplicates
         unique = [r for r in results if not r.is_duplicate]
@@ -179,11 +193,11 @@ async def batch_process(
 
         article_responses = [
             ProcessedArticleResponse(
-                id = r.id,
+                id = r.id or str(hash(r.url)),
                 title = r.title,
                 summary = r.summary,
-                url = r.url,
-                published_at = r.published_at,
+                url = str(r.url),
+                published_at = r.published_at or '',
                 is_duplicate = r.is_duplicate,
                 processing_time_ms = r.processing_time_ms
             )
@@ -202,7 +216,7 @@ async def batch_process(
         logger.error(f"Error in batch processing: {e}", exc_info = True)
         raise HTTPException(status_code = 500, detail = str(e))
     
-@app.get("/app/v1/metrics", response_model = MetricsResponse)
+@app.get("/api/v1/metrics", response_model = MetricsResponse)
 async def get_metrics():
     """Get Processing metrics"""
     try:
@@ -215,7 +229,7 @@ async def get_metrics():
             uptime_seconds = metrics.get('uptime_seconds', 0),
         )
     except Exception as e:
-        logger.error(f"Error fetching metrics: {e}", exc_indo = True)
+        logger.error(f"Error fetching metrics: {e}", exc_info = True)
         raise HTTPException(status_code = 500, detail = str(e))
     
 if __name__ == "__main__":

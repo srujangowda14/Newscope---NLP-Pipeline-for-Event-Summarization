@@ -181,7 +181,7 @@ class NewsProcessor:
         )
 
         #Step 6: Record metrics
-        if self.netrics:
+        if self.metrics:
             self.metrics.record_pipeline_run(
                 total_articles = len(articles),
                 processing_time_ms = processing_time

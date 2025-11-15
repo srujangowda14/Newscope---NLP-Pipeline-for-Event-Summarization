@@ -42,7 +42,7 @@ class MetricsCollector:
             processing_time_ms: float,
     ):
         
-        self.processong_times.append(processing_time_ms)
+        self.processing_times.append(processing_time_ms)
 
     def get_summary(self) -> dict:
         uptime = (datetime.now() - self.start_time).total_seconds

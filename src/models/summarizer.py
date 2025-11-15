@@ -95,7 +95,7 @@ class Summarizer:
                 min_length = min_length,
                 num_beams=4,
                 length_penalty=2.0, #siacourages overly long summaries
-                earlyzx_stopping=True
+                early_stopping=True
             )
         
         summaries = self.tokenizer.batch_decode(
