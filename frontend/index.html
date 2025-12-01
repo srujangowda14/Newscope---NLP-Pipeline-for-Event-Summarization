@@ -486,6 +486,145 @@
                 submitBtn.disabled = false;
             }
         }
+
+        function addBatchArticle() {
+            batchCount++;
+            const container = document.getElementById('batchArticles');
+            const articleDiv = document.createElement('div');
+            articleDiv.className = 'batch-item';
+            articleDiv.id = `batch-${batchCount}`;
+            articleDiv.innerHTML = `
+                <button class="remove-btn" onclick="removeBatchArticle(${batchCount})">×</button>
+                <div class="input-group">
+                    <input type="text" placeholder="Title" class="batch-title" required>
+                </div>
+                <div class="input-group">
+                    <textarea placeholder="Content" class="batch-content" required 
+                        style="min-height: 100px;"></textarea>
+                </div>
+                <div class="input-group">
+                    <input type="url" placeholder="https://example.com" class="batch-url" required>
+                </div>
+            `;
+            container.appendChild(articleDiv);
+        }
+
+        function removeBatchArticle(id) {
+            document.getElementById(`batch-${id}`).remove();
+        }
+
+        async function processBatch() {
+            const articles = [];
+            document.querySelectorAll('.batch-item').forEach(item => {
+                const title = item.querySelector('.batch-title').value;
+                const content = item.querySelector('.batch-content').value;
+                const url = item.querySelector('.batch-url').value;
+
+                if (title && content && url) {
+                    articles.push({ title, content, url });
+                }
+            });
+
+            if (articles.length === 0) {
+                alert('Please add at least one article!');
+                return;
+            }
+
+            const loading = document.getElementById('batchLoading');
+            const result = document.getElementById('batchResult');
+            const error = document.getElementById('batchError');
+            const batchBtn = document.getElementById('batchBtn');
+
+            loading.classList.add('active');
+            result.classList.remove('active');
+            error.classList.remove('active');
+            batchBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/api/v1/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        articles,
+                        deduplicate: true,
+                        summarize: true
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Show results
+                let html = `
+                    <h2 style="margin-bottom: 20px;">
+                        📊 Results: ${data.unique_articles} unique articles, 
+                        ${data.duplicate_articles} duplicates removed
+                    </h2>
+                `;
+
+                data.articles.forEach(article => {
+                    if (!article.is_duplicate) {
+                        html += `
+                            <div class="result-item">
+                                <h3>
+                                    ${article.title}
+                                    <span class="badge unique">Unique</span>
+                                </h3>
+                                <div class="summary">${article.summary}</div>
+                                <div class="meta">
+                                    Processing: ${article.processing_time_ms.toFixed(2)}ms
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                const duplicates = data.articles.filter(a => a.is_duplicate);
+                if (duplicates.length > 0) {
+                    html += `<h3 style="margin-top: 20px; color: #ff6b6b;">
+                        🗑️ Duplicates Removed:
+                    </h3>`;
+                    duplicates.forEach(article => {
+                        html += `
+                            <div class="result-item" style="opacity: 0.7;">
+                                <h3>
+                                    ${article.title}
+                                    <span class="badge duplicate">Duplicate</span>
+                                </h3>
+                            </div>
+                        `;
+                    });
+                }
+
+                result.innerHTML = html;
+                result.classList.add('active');
+
+                loadStats();
+
+                } catch (err) {
+                error.textContent = `Error: ${err.message}. Make sure the API is running!`;
+                error.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+                batchBtn.disabled = false;
+            }
+        }
+
+        // Add first batch article on load
+        addBatchArticle();
+    </script>
+</body>
+</html>
+
+
+
+
+
     </script>
 </body>
 </html>
